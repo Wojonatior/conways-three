@@ -7,6 +7,8 @@ const GRID_SIZE = 5;
 const GRID_WIDTH = Math.floor(SIZE/GRID_SIZE);
 const MARGIN =  (SIZE % GRID_SIZE) / 2;
 const STEP = SIZE / 20;
+const ON = 'black';
+const OFF = 'white';
 
 canvas.width = SIZE * DPR;
 canvas.height = SIZE * DPR;
@@ -34,12 +36,11 @@ const drawGrid = (grid) => {
       context.fillRect(0, 0, GRID_SIZE, GRID_SIZE)
       context.restore();
     })
-
   })
 }
 
 const getNeighbors = (grid, x, y) => {
-  const GRID_WIDTH = 3;
+  //const GRID_WIDTH = 3; // This is the little nugget that's wreaking conway
   let above = y-1;
   let below = y+1;
   let left  = x-1;
@@ -48,7 +49,6 @@ const getNeighbors = (grid, x, y) => {
   if (below >= GRID_WIDTH) { below = 0; }
   if (left < 0) { left = GRID_WIDTH -1; }
   if (right >= GRID_WIDTH) { right = 0; }
-  debugger;
   return {
     north: grid[x][above],
     northEast: grid[right][above],
@@ -61,6 +61,40 @@ const getNeighbors = (grid, x, y) => {
   }
 };
 
+const blackToNumber = (color) => color == 'black'? 1:0;
+const conwayReduceNeigbors = (neighbors) => {
+  return blackToNumber(neighbors.north) +
+    blackToNumber(neighbors.northEast) +
+    blackToNumber(neighbors.east) +
+    blackToNumber(neighbors.southEast) +
+    blackToNumber(neighbors.south) +
+    blackToNumber(neighbors.southWest) +
+    blackToNumber(neighbors.west) +
+    blackToNumber(neighbors.northWest);
+}
+
+const getNextConwayGrid = (lastGrid) => {
+  const neighborCountGrid = lastGrid.map((column, x) => {
+    return column.map((_, y) => {
+      return conwayReduceNeigbors(getNeighbors(lastGrid, x, y));
+    });
+  })
+
+  const colorGrid = neighborCountGrid.map((column, x) => {
+    return column.map((cell_count, y) => {
+      if(lastGrid[x][y] == ON){
+        if(cell_count < 2 || cell_count > 3)
+          return OFF;
+        return ON;
+      }
+      if(cell_count == 3)
+        return ON;
+      return OFF;
+    });
+  })
+  return colorGrid;
+};
+
 const getNextGrid = (lastGrid) => {
   lastGrid.unshift(lastGrid.pop());
   return lastGrid;
@@ -69,9 +103,11 @@ const getNextGrid = (lastGrid) => {
 const draw = (lastGrid) => {
   context.globalCompositeOperation = 'destination-over';
   context.clearRect(0, 0, SIZE*DPR, SIZE*DPR);
-  const nextGrid = getNextGrid(lastGrid);
+  const nextGrid = getNextConwayGrid(lastGrid);
   drawGrid(nextGrid);
-  window.requestAnimationFrame(() => draw(nextGrid));
+  setTimeout(() => {
+    window.requestAnimationFrame(() => draw(nextGrid));
+  }, 1000 / 10);
 }
 
 const init = () => {
