@@ -14,6 +14,7 @@ canvas.width = SIZE * DPR;
 canvas.height = SIZE * DPR;
 context.scale(DPR, DPR);
 
+// BUG: When the grid is zoomed out, the edges of the grid won't update
 
 const getStartingGrid = () => {
   let grid = [];
@@ -40,7 +41,7 @@ const drawGrid = (grid) => {
 }
 
 const getNeighbors = (grid, x, y) => {
-  //const GRID_WIDTH = 3; // This is the little nugget that's wreaking conway
+  // const GRID_WIDTH = 3; // This is the little nugget that's wreaking conway
   let above = y-1;
   let below = y+1;
   let left  = x-1;
@@ -62,6 +63,7 @@ const getNeighbors = (grid, x, y) => {
 };
 
 const blackToNumber = (color) => color == 'black'? 1:0;
+
 const conwayReduceNeigbors = (neighbors) => {
   return blackToNumber(neighbors.north) +
     blackToNumber(neighbors.northEast) +
@@ -73,29 +75,37 @@ const conwayReduceNeigbors = (neighbors) => {
     blackToNumber(neighbors.northWest);
 }
 
-const getNextConwayGrid = (lastGrid) => {
+const conwayGetNextColors = (cell_count, cell_state) => {
+  if (cell_state == ON) {
+    if(cell_count < 2 || cell_count > 3)
+      return OFF;
+    return ON;
+  }
+  if(cell_count == 3)
+    return ON;
+  return OFF;
+}
+
+const getNextGrid = (lastGrid, getReducedNeighbors, getNextColors) => {
   const neighborCountGrid = lastGrid.map((column, x) => {
     return column.map((_, y) => {
-      return conwayReduceNeigbors(getNeighbors(lastGrid, x, y));
+      return getReducedNeighbors(getNeighbors(lastGrid, x, y));
     });
   })
 
   const colorGrid = neighborCountGrid.map((column, x) => {
     return column.map((cell_count, y) => {
-      if(lastGrid[x][y] == ON){
-        if(cell_count < 2 || cell_count > 3)
-          return OFF;
-        return ON;
-      }
-      if(cell_count == 3)
-        return ON;
-      return OFF;
+      return getNextColors(cell_count, lastGrid[x][y]);
     });
   })
   return colorGrid;
 };
 
-const getNextGrid = (lastGrid) => {
+const getNextConwayGrid = (lastGrid) => {
+  return getNextGrid(lastGrid, conwayReduceNeigbors, conwayGetNextColors);
+}
+
+const getNextGridScroll = (lastGrid) => {
   lastGrid.unshift(lastGrid.pop());
   return lastGrid;
 }
