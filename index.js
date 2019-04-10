@@ -7,8 +7,8 @@ const GRID_SIZE = 5;
 const GRID_WIDTH = Math.floor(SIZE/GRID_SIZE);
 const MARGIN =  (SIZE % GRID_SIZE) / 2;
 const STEP = SIZE / 20;
-const ON = 'black';
-const OFF = 'white';
+const ON = 0;
+const OFF = 255;
 
 canvas.width = SIZE * DPR;
 canvas.height = SIZE * DPR;
@@ -16,23 +16,36 @@ context.scale(DPR, DPR);
 
 // BUG: When the grid is zoomed out, the edges of the grid won't update
 
-const getStartingGrid = () => {
+const getStartingGrid = (gridGenerator) => {
   let grid = [];
   for(let x = 0; x < GRID_WIDTH; x++){
     let column = [];
     for(let y = 0; y < GRID_WIDTH; y++){
-      column.push(Math.random() > .5 ? 'white' : 'black');
+      column.push(gridGenerator());
     }
     grid.push(column);
   }
   return grid;
 };
 
+const binaryGreyscaleGrid = () => {
+  return getStartingGrid(() => { return Math.random() > .5 ? ON: OFF; });
+};
+
+const gradientGreyscaleGrid = () => {
+  return getStartingGrid(() => { 
+    if(Math.random() >= .999){
+      return Math.floor(Math.random() * 255);
+    }
+    return 254;
+  });
+};
+
 const drawGrid = (grid) => {
   grid.map((column, x) => {
     column.map((cell_color, y) => {
       context.save();
-      context.fillStyle =  cell_color;
+      context.fillStyle = `rgb(${cell_color}, ${cell_color}, ${cell_color})`;
       context.translate(x * GRID_SIZE + MARGIN, y * GRID_SIZE + MARGIN)
       context.fillRect(0, 0, GRID_SIZE, GRID_SIZE)
       context.restore();
@@ -62,67 +75,85 @@ const getNeighbors = (grid, x, y) => {
   }
 };
 
-const blackToNumber = (color) => color == 'black'? 1:0;
+const wavesReduceNeighbors = (neighbors) => {
+  const sum = Object.keys(neighbors).reduce((previous, key) => {
+    return previous + neighbors[key];
+  }, 0);
+  return sum / Object.keys(neighbors).length;
+};
 
 const conwayReduceNeigbors = (neighbors) => {
-  return blackToNumber(neighbors.north) +
-    blackToNumber(neighbors.northEast) +
-    blackToNumber(neighbors.east) +
-    blackToNumber(neighbors.southEast) +
-    blackToNumber(neighbors.south) +
-    blackToNumber(neighbors.southWest) +
-    blackToNumber(neighbors.west) +
-    blackToNumber(neighbors.northWest);
+  const sum = Object.keys(neighbors).reduce((previous, key) => {
+    return previous + neighbors[key];
+  }, 0);
+  return 8 - (sum / 255);
 }
 
-const conwayGetNextColors = (cell_count, cell_state) => {
-  if (cell_state == ON) {
-    if(cell_count < 2 || cell_count > 3)
+const wavesGetNextColors = (average, currentCell, previousCell) => {
+  if(average == 255)
+    return 0;
+  if(average == 0)
+    return 255;
+  let nextState = currentCell + average - previousCell;
+  nextState = Math.min(nextState, 255);
+  nextState = Math.max(nextState, 0);
+  return nextState;
+}
+
+const conwayGetNextColors = (cellCount, cellState) => {
+  debugger;
+  if (cellState == ON) {
+    if(cellCount < 2 || cellCount > 3) {
       return OFF;
+    }
     return ON;
   }
-  if(cell_count == 3)
+  if(cellCount == 3)
     return ON;
   return OFF;
 }
 
-const getNextGrid = (lastGrid, getReducedNeighbors, getNextColors) => {
-  const neighborCountGrid = lastGrid.map((column, x) => {
+const getNextGrid = (currentGrid, previousGrid, getReducedNeighbors, getNextColors) => {
+  const neighborCountGrid = currentGrid.map((column, x) => {
     return column.map((_, y) => {
-      return getReducedNeighbors(getNeighbors(lastGrid, x, y));
+      return getReducedNeighbors(getNeighbors(currentGrid, x, y));
     });
   })
 
   const colorGrid = neighborCountGrid.map((column, x) => {
-    return column.map((cell_count, y) => {
-      return getNextColors(cell_count, lastGrid[x][y]);
+    return column.map((reduced_cell, y) => {
+      return getNextColors(reduced_cell, currentGrid[x][y], previousGrid[x][y]);
     });
   })
   return colorGrid;
 };
 
-const getNextConwayGrid = (lastGrid) => {
-  return getNextGrid(lastGrid, conwayReduceNeigbors, conwayGetNextColors);
+const getNextConwayGrid = (currentGrid, previousGrid) => {
+  return getNextGrid(currentGrid, previousGrid, conwayReduceNeigbors, conwayGetNextColors);
 }
 
-const getNextGridScroll = (lastGrid) => {
-  lastGrid.unshift(lastGrid.pop());
-  return lastGrid;
+const getNextWavesGrid = (currentGrid, previousGrid) => {
+  return getNextGrid(currentGrid, previousGrid, wavesReduceNeighbors, wavesGetNextColors);
 }
 
-const draw = (lastGrid) => {
+const getNextGridScroll = (currentGrid) => {
+  currentGrid.unshift(currentGrid.pop());
+  return currentGrid;
+}
+
+const draw = (currentGrid, previousGrid) => {
   context.globalCompositeOperation = 'destination-over';
   context.clearRect(0, 0, SIZE*DPR, SIZE*DPR);
-  const nextGrid = getNextConwayGrid(lastGrid);
+  const nextGrid = getNextConwayGrid(currentGrid, previousGrid);
   drawGrid(nextGrid);
   setTimeout(() => {
-    window.requestAnimationFrame(() => draw(nextGrid));
+    window.requestAnimationFrame(() => draw(nextGrid, currentGrid));
   }, 1000 / 10);
 }
 
 const init = () => {
-  const startingGrid = getStartingGrid();
-  window.requestAnimationFrame(() => draw(startingGrid));
+  const startingGrid = binaryGreyscaleGrid();
+  window.requestAnimationFrame(() => draw(startingGrid, startingGrid));
 };
 
 init();
