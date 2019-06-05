@@ -1,0 +1,37 @@
+{
+  "name": "@wojonatior/conways-three",
+  "author": {
+    "name": "Jarek Wojciechowski",
+    "email": "jarekwojo@gmail.com"
+  },
+  "version": "0.2.0",
+  "description": "A React component that plays a uniquely broken version of conway's game of life",
+  "license": "MIT",
+  "repository": "wojonatior/conways-three",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "webpack --watch --mode development",
+    "build": "webpack --mode production",
+    "prepublishOnly": "webpack --mode production"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist/*"
+  ],
+  "dependencies": {
+    "react": "^16.8.6",
+    "webpack": "^4.32.0"
+  },
+  "peerDependencies": {
+    "react": "^16.8.6"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.4.5",
+    "@babel/preset-env": "^7.4.5",
+    "@babel/preset-react": "^7.0.0",
+    "babel-cli": "^6.26.0",
+    "babel-loader": "^8.0.6",
+    "babel-plugin-transform-react-jsx": "^6.24.1",
+    "webpack-cli": "^3.3.2"
+  }
+}
