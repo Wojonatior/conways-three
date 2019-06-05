@@ -54,7 +54,7 @@ const drawGrid = (grid) => {
 }
 
 const getNeighbors = (grid, x, y) => {
-  // const GRID_WIDTH = 3; // This is the little nugget that's wreaking conway
+  const GRID_WIDTH = 3; // This is the little nugget that's wreaking conway
   let above = y-1;
   let below = y+1;
   let left  = x-1;
@@ -101,7 +101,6 @@ const wavesGetNextColors = (average, currentCell, previousCell) => {
 }
 
 const conwayGetNextColors = (cellCount, cellState) => {
-  debugger;
   if (cellState == ON) {
     if(cellCount < 2 || cellCount > 3) {
       return OFF;
@@ -156,4 +155,5 @@ const init = () => {
   window.requestAnimationFrame(() => draw(startingGrid, startingGrid));
 };
 
+context.translate(STEP, STEP);
 init();
