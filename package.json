@@ -4,7 +4,7 @@
     "name": "Jarek Wojciechowski",
     "email": "jarekwojo@gmail.com"
   },
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A React component that plays a uniquely broken version of conway's game of life",
   "license": "MIT",
   "repository": "wojonatior/conways-three",
